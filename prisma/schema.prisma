@@ -1,0 +1,403 @@
+// Prisma schema — Центр поддержки матерей «Аналарды қолдау орталығы»
+// ОФ «Фонд социального развития «Арғымақ»
+//
+// Все контентные модели хранят русскую и казахскую версии текста отдельными
+// полями (Ru / Kz), в соответствии с п.36 ТЗ: перевод не только интерфейса,
+// но и контента.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------- Админка ----------
+
+enum AdminRole {
+  ADMIN   // полный доступ
+  MANAGER // без управления пользователями/настройками
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  role         AdminRole @default(MANAGER)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  auditLogs    AdminAuditLog[]
+}
+
+model AdminAuditLog {
+  id        String   @id @default(cuid())
+  admin     AdminUser @relation(fields: [adminId], references: [id])
+  adminId   String
+  action    String   // create/update/delete/status_change/export...
+  entity    String   // "Fundraiser", "Application", ...
+  entityId  String?
+  meta      Json?
+  createdAt DateTime @default(now())
+
+  @@index([entity, entityId])
+}
+
+// ---------- Обращения "Получить помощь" (приватные, никогда не публичные) ----------
+
+enum ApplicationStatus {
+  NEW                    // Новое
+  ACCEPTED               // Принято
+  CONSULTATION_SCHEDULED // Консультация назначена
+  IN_SUPPORT             // На сопровождении
+  REFERRED               // Направлено
+  COMPLETED              // Завершено
+}
+
+model Application {
+  id                    String            @id @default(cuid())
+  ticketNumber          String            @unique // AO-2026-00124
+  fullName              String
+  city                  String
+  phone                 String
+  whatsapp              String?
+  childrenCount         Int?
+  childrenAges          String?
+  situationDescription  String
+  helpCategories         String[]         // алименты, развод, жильё, ...
+  documentPaths         String[]          // приватное хранилище, не раздаётся публично
+  preferredContactTime  String?
+  consentPersonalData   Boolean           @default(false)
+  status                ApplicationStatus @default(NEW)
+  adminNote             String?
+  createdAt             DateTime          @default(now())
+  updatedAt             DateTime          @updatedAt
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+// ---------- "Мама недели" / "Истории помощи" (единая модель Story) ----------
+
+enum StoryStatus {
+  FUNDRAISING_OPEN  // 🟡 Сбор открыт
+  IN_PROGRESS       // 🔵 Помощь в процессе
+  HELP_PROVIDED     // 🟢 Помощь оказана
+  REPORT_PUBLISHED  // ⚪ Отчёт опубликован
+}
+
+model Story {
+  id               String      @id @default(cuid())
+  slug             String      @unique
+  titleRu          String
+  titleKz          String
+  summaryRu        String      // короткая проблема для карточки/анонса недели
+  summaryKz        String
+  problemRu        String      // подробное описание проблемы
+  problemKz        String
+  neededHelpRu     String      // список необходимой помощи, буллеты через \n
+  neededHelpKz     String
+  goalOfWeekRu     String?     // "Цель недели" — используется для Мамы недели
+  goalOfWeekKz     String?
+  resultRu         String?
+  resultKz         String?
+  reportRu         String?     // текстовый отчёт: что сделали, сколько получили/потратили
+  reportKz         String?
+  categoryTags     String[]    // алименты, документы, трудоустройство ...
+  status           StoryStatus @default(FUNDRAISING_OPEN)
+  isMamaOfWeek     Boolean     @default(false)
+  weekOf           DateTime?   // дата четверга публикации
+  consentGiven     Boolean     @default(false) // согласие на публикацию истории
+  anonymized       Boolean     @default(true)  // не раскрывать персональные данные
+  coverImage       String?
+  images           String[]
+  resultImages     String[]    // фото "после" / результата
+  fundraiser       Fundraiser?
+  published        Boolean     @default(false)
+  publishedAt      DateTime?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
+
+  @@index([status])
+  @@index([isMamaOfWeek])
+  @@index([published])
+}
+
+// ---------- Сборы ----------
+
+enum FundraiserStatus {
+  OPEN
+  CLOSED
+}
+
+model Fundraiser {
+  id            String           @id @default(cuid())
+  slug          String           @unique
+  titleRu       String
+  titleKz       String
+  descriptionRu String
+  descriptionKz String
+  goalAmount    Int              // тенге
+  raisedAmount  Int              @default(0)
+  startDate     DateTime
+  endDate       DateTime?
+  status        FundraiserStatus @default(OPEN)
+  coverImage    String?
+  story         Story?           @relation(fields: [storyId], references: [id])
+  storyId       String?          @unique
+  expenses      Expense[]
+  published     Boolean          @default(false)
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([status])
+}
+
+model Expense {
+  id            String     @id @default(cuid())
+  fundraiser    Fundraiser @relation(fields: [fundraiserId], references: [id], onDelete: Cascade)
+  fundraiserId  String
+  titleRu       String
+  titleKz       String
+  amount        Int
+  date          DateTime
+  documentUrl   String?    // скан чека/документа
+  createdAt     DateTime   @default(now())
+}
+
+// ---------- Услуги (статический каталог + доп. контент в коде) ----------
+// Справочно хранится в коде (src/content/services.ts), т.к. состав фиксирован ТЗ.
+
+// ---------- Работа и профориентация ----------
+
+enum VacancyFormat {
+  OFFICE
+  REMOTE
+  HYBRID
+}
+
+model Vacancy {
+  id             String        @id @default(cuid())
+  titleRu        String
+  titleKz        String
+  organization   String?
+  city           String
+  format         VacancyFormat @default(OFFICE)
+  schedule       String        // график
+  direction      String        // направление/сфера
+  salaryFrom     Int?
+  salaryTo       Int?
+  descriptionRu  String
+  descriptionKz  String
+  requirementsRu String?
+  requirementsKz String?
+  contactInfo    String?
+  active         Boolean       @default(true)
+  publishedAt    DateTime      @default(now())
+
+  @@index([active])
+}
+
+// ---------- Гранты и возможности ----------
+
+enum GrantStatus {
+  OPEN
+  CLOSED
+}
+
+model Grant {
+  id                String      @id @default(cuid())
+  titleRu           String
+  titleKz           String
+  organizer         String
+  forWhomRu         String
+  forWhomKz         String
+  fundingAmount     String      // строка, т.к. часто диапазон/условия
+  requirementsRu    String
+  requirementsKz    String
+  deadline          DateTime?
+  documentsNeededRu String?
+  documentsNeededKz String?
+  sourceUrl         String
+  status            GrantStatus @default(OPEN)
+  createdAt         DateTime    @default(now())
+
+  @@index([status])
+}
+
+// ---------- Проекты / Дармарки и экоакции / Детям ----------
+
+enum ProjectCategory {
+  PROJECT
+  FLEA_MARKET
+  ECO
+  KIDS
+}
+
+model Project {
+  id            String          @id @default(cuid())
+  slug          String          @unique
+  category      ProjectCategory @default(PROJECT)
+  titleRu       String
+  titleKz       String
+  descriptionRu String
+  descriptionKz String
+  goalRu        String?
+  goalKz        String?
+  resultsRu     String?
+  resultsKz     String?
+  partners      String[]
+  coverImage    String?
+  images        String[]
+  reportRu      String?
+  reportKz      String?
+  eventDate     DateTime?
+  published     Boolean         @default(true)
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([category])
+}
+
+// ---------- Обратная связь (страница "Контакты") ----------
+
+model ContactMessage {
+  id        String   @id @default(cuid())
+  name      String
+  contact   String   // телефон или email для ответа
+  message   String
+  status    String   @default("NEW")
+  createdAt DateTime @default(now())
+}
+
+// ---------- Календарь мероприятий ----------
+
+model Event {
+  id               String   @id @default(cuid())
+  titleRu          String
+  titleKz          String
+  descriptionRu    String
+  descriptionKz    String
+  date             DateTime
+  time             String?
+  location         String
+  organizer        String?
+  registrationUrl  String?
+  coverImage       String?
+  createdAt        DateTime @default(now())
+
+  @@index([date])
+}
+
+// ---------- Новости / блог ----------
+
+enum NewsCategory {
+  NEWS
+  ANNOUNCEMENT
+  EVENT
+  PROMO
+  REPORT
+  GRANT
+  VACANCY
+}
+
+model NewsPost {
+  id           String       @id @default(cuid())
+  slug         String       @unique
+  category     NewsCategory @default(NEWS)
+  titleRu      String
+  titleKz      String
+  excerptRu    String
+  excerptKz    String
+  bodyRu       String
+  bodyKz       String
+  coverImage   String?
+  published    Boolean      @default(true)
+  publishedAt  DateTime     @default(now())
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([category])
+  @@index([publishedAt])
+}
+
+// ---------- Волонтёры / Партнёры (заявки) ----------
+
+model VolunteerApplication {
+  id               String   @id @default(cuid())
+  fullName         String
+  phone            String
+  whatsapp         String?
+  email            String?
+  city             String?
+  specializations  String[]
+  message          String?
+  status           String   @default("NEW")
+  createdAt        DateTime @default(now())
+}
+
+model PartnerApplication {
+  id                String   @id @default(cuid())
+  organization      String
+  contactName       String
+  phone             String
+  email             String?
+  cooperationTypes  String[]
+  message           String?
+  status            String   @default("NEW")
+  createdAt         DateTime @default(now())
+}
+
+// ---------- Полезная информация ----------
+
+model UsefulArticle {
+  id         String   @id @default(cuid())
+  slug       String   @unique
+  titleRu    String
+  titleKz    String
+  summaryRu  String
+  summaryKz  String
+  bodyRu     String
+  bodyKz     String
+  category   String
+  published  Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+// ---------- Фотогалерея ----------
+
+enum GalleryCategory {
+  PROJECTS
+  MOTHERS
+  CHILDREN
+  VOLUNTEERS
+  EVENTS
+  FLEA_MARKET
+  ECO
+}
+
+model GalleryImage {
+  id         String          @id @default(cuid())
+  url        String
+  category   GalleryCategory
+  captionRu  String?
+  captionKz  String?
+  createdAt  DateTime        @default(now())
+
+  @@index([category])
+}
+
+// ---------- Статистика Центра (динамические показатели, п.47) ----------
+
+model SiteStat {
+  key       String   @id // WOMEN_HELPED, CONSULTATIONS, PROJECTS_DONE, FAMILIES, VOLUNTEERS, EVENTS, CLOTHES_TONS
+  labelRu   String
+  labelKz   String
+  value     Int
+  suffix    String?  // "+", "тонн" и т.п.
+  updatedAt DateTime @updatedAt
+}
