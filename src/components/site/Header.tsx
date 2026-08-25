@@ -73,13 +73,13 @@ export function Header({
           ))}
         </nav>
 
-        <div className="hidden items-center gap-3 lg:flex">
+        <div className="hidden shrink-0 items-center gap-3 lg:flex">
           <a
             href={`tel:${CONTACTS.phoneHref.replace("tel:", "")}`}
             onClick={() => trackEvent("click_call")}
-            className="flex items-center gap-1.5 text-sm font-semibold text-graphite-700 hover:text-terracotta-600"
+            className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-graphite-700 hover:text-terracotta-600 xl:flex"
           >
-            <Phone className="h-4 w-4" /> {CONTACTS.phone}
+            <Phone className="h-4 w-4 shrink-0" /> {CONTACTS.phone}
           </a>
           <LanguageSwitcher current={locale} />
           <LinkButton

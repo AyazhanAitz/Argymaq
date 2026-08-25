@@ -7,6 +7,8 @@ import { Section, Container } from "@/components/ui/Container";
 import { LinkButton } from "@/components/ui/Button";
 import { ProjectDetail } from "@/components/story/ProjectDetail";
 
+export const dynamic = "force-dynamic"; // всегда свежие данные из БД (контент управляется админ-панелью)
+
 export async function generateMetadata({
   params,
 }: {

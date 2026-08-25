@@ -10,6 +10,8 @@ import { LinkButton } from "@/components/ui/Button";
 import { PaymentPanel } from "@/components/story/PaymentPanel";
 import { formatTenge, formatDate } from "@/lib/utils";
 
+export const dynamic = "force-dynamic"; // всегда свежие данные из БД (контент управляется админ-панелью)
+
 export async function generateMetadata({
   params,
 }: {

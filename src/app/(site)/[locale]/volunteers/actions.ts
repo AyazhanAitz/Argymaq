@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { isRateLimited } from "@/lib/rateLimit";
 
 const schema = z.object({
   fullName: z.string().trim().min(2).max(200),
@@ -35,6 +36,10 @@ export async function submitVolunteerRequest(
 
   if (!parsed.success) return { status: "error", message: "Пожалуйста, заполните обязательные поля корректно." };
   const data = parsed.data;
+
+  if (isRateLimited("volunteers")) {
+    return { status: "error", message: "Слишком много попыток. Пожалуйста, попробуйте позже." };
+  }
 
   const renderedAtMs = Date.parse(data.renderedAt);
   if (data.website || !renderedAtMs || Date.now() - renderedAtMs < 2000) {

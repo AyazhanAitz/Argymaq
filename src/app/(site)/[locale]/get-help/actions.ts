@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { saveApplicationDocuments } from "@/lib/storage";
 import { formatTicketNumber } from "@/lib/utils";
+import { isRateLimited } from "@/lib/rateLimit";
 
 const schema = z.object({
   fullName: z.string().trim().min(2).max(200),
@@ -44,6 +45,10 @@ export async function submitHelpRequest(
     website: formData.get("website")?.toString() ?? "",
     renderedAt: formData.get("renderedAt")?.toString() ?? "",
   };
+
+  if (isRateLimited("get-help")) {
+    return { status: "error", message: "Слишком много попыток. Пожалуйста, попробуйте позже или напишите нам в WhatsApp." };
+  }
 
   const parsed = schema.safeParse(raw);
   if (!parsed.success) {

@@ -32,6 +32,8 @@ import { GrantCard } from "@/components/cards/GrantCard";
 import { NewsCard } from "@/components/cards/NewsCard";
 import { EventCard } from "@/components/cards/EventCard";
 
+export const dynamic = "force-dynamic"; // всегда свежие данные из БД (контент управляется админ-панелью)
+
 export default async function HomePage({ params }: { params: { locale: string } }) {
   if (!isLocale(params.locale)) notFound();
   const locale: Locale = params.locale;

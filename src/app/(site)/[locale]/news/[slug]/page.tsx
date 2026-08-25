@@ -9,6 +9,8 @@ import { LinkButton } from "@/components/ui/Button";
 import { ShareButtons } from "@/components/site/ShareButtons";
 import { formatDate } from "@/lib/utils";
 
+export const dynamic = "force-dynamic"; // всегда свежие данные из БД (контент управляется админ-панелью)
+
 export async function generateMetadata({
   params,
 }: {

@@ -41,6 +41,28 @@ export async function saveApplicationDocuments(files: File[]): Promise<string[]>
   return savedPaths;
 }
 
+const PUBLIC_UPLOADS_ROOT = path.join(process.cwd(), "public", "uploads");
+const ALLOWED_IMAGE_EXTENSIONS = [".jpg", ".jpeg", ".png", ".webp"];
+const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10 МБ
+
+/**
+ * Публичное хранилище медиафайлов (обложки новостей/проектов/сборов,
+ * фотогалерея). В отличие от документов обращений, эти файлы
+ * предназначены для публичного показа на сайте.
+ */
+export async function savePublicImage(file: File, category: string): Promise<string | null> {
+  if (!file || file.size === 0 || file.size > MAX_IMAGE_SIZE) return null;
+  const ext = path.extname(file.name).toLowerCase();
+  if (!ALLOWED_IMAGE_EXTENSIONS.includes(ext)) return null;
+
+  const dir = path.join(PUBLIC_UPLOADS_ROOT, category);
+  await mkdir(dir, { recursive: true });
+  const fileName = `${randomUUID()}${ext}`;
+  const buffer = Buffer.from(await file.arrayBuffer());
+  await writeFile(path.join(dir, fileName), buffer);
+  return `/uploads/${category}/${fileName}`;
+}
+
 export function resolvePrivateDocumentPath(relativePath: string): string {
   const resolved = path.normalize(path.join(PRIVATE_STORAGE_ROOT, relativePath));
   if (!resolved.startsWith(PRIVATE_STORAGE_ROOT)) {

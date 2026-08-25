@@ -6,6 +6,8 @@ import { getNews } from "@/lib/queries";
 import { Section, SectionHeading, Container } from "@/components/ui/Container";
 import { NewsCard } from "@/components/cards/NewsCard";
 
+export const dynamic = "force-dynamic"; // всегда свежие данные из БД (контент управляется админ-панелью)
+
 export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
   const locale = isLocale(params.locale) ? params.locale : "ru";
   const dict = getDictionary(locale);

@@ -1,36 +1,210 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Центр поддержки матерей «Аналарды қолдау орталығы»
 
-## Getting Started
+Официальный сайт Центра поддержки матерей при ОФ «Фонд социального развития «Арғымақ».
 
-First, run the development server:
+Стек: **Next.js 14 (App Router) · TypeScript · Tailwind CSS · Prisma · PostgreSQL**.
+
+---
+
+## 1. Быстрый старт (локальная разработка)
+
+### Требования
+- Node.js 20+
+- PostgreSQL 14+ (локально или в контейнере)
+
+### Установка
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env
+# отредактируйте .env: DATABASE_URL, SESSION_SECRET, SEED_ADMIN_EMAIL/PASSWORD
+
+npx prisma migrate dev   # создаст схему БД
+npm run db:seed          # наполнит демо/базовыми данными (см. раздел 5)
+
+npm run dev              # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Сайт откроется на `/ru` (редирект с `/`). Админ-панель — `/admin/login`
+(данные для входа — из `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD`).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Полезные команды
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Команда | Назначение |
+|---|---|
+| `npm run dev` | Локальная разработка |
+| `npm run build` | Production-сборка |
+| `npm run start` | Запуск собранного приложения |
+| `npm run db:migrate` | Применить новую миграцию Prisma |
+| `npm run db:seed` | Повторно накатить seed-скрипт |
+| `npm run db:studio` | Prisma Studio — визуальный просмотр БД |
 
-## Learn More
+---
 
-To learn more about Next.js, take a look at the following resources:
+## 2. Архитектура
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+src/
+  app/
+    (site)/[locale]/     — публичный сайт, локали ru/kz (RU по умолчанию)
+    admin/                — админ-панель (своя корневая раскладка, вне [locale])
+      (protected)/        — защищённые сессией разделы (сайдбар + проверка авторизации)
+      login/               — страница входа
+    api/admin/            — приватные API: экспорт CSV, выдача документов обращений
+  components/
+    site/                — Header, Footer, LanguageSwitcher, соц-иконки
+    home/                — блоки главной страницы
+    cards/                — карточки (сборы, истории, новости, вакансии, гранты, события)
+    ui/                   — примитивы дизайн-системы (Button, Photo, ProgressBar, StatusPill…)
+    admin/                — общие элементы админки (сайдбар, таблицы, кнопка удаления)
+  content/               — статический контент из ТЗ (услуги, специализации волонтёров и т.д.)
+  i18n/                  — словари RU/KZ, конфигурация локалей
+  lib/                   — Prisma-клиент, auth, загрузка файлов, rate-limit, аналитика, утилиты
+middleware.ts (в src/)   — редирект локали + защита /admin и /api/admin
+prisma/schema.prisma     — полная схема данных
+prisma/seed.ts           — сид: админ, статистика, статьи, демо-примеры (см. ниже)
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Мультиязычность (п.36 ТЗ)
+- Каждая страница живёт под `/ru/...` и `/kz/...`; переключатель сохраняет текущий путь.
+- Весь пользовательский **контент** (не только интерфейс) хранится в БД отдельными
+  полями `titleRu`/`titleKz`, `bodyRu`/`bodyKz` и т.д. — для каждой сущности.
+- Архитектура готова к добавлению английского языка: достаточно добавить `en` в
+  `src/i18n/config.ts`, словарь `src/i18n/dictionaries/en.ts` и `enX`-поля в Prisma-схему.
 
-## Deploy on Vercel
+### Безопасность (п.38 ТЗ)
+- Админ-сессия — httpOnly JWT-cookie (`jose`), проверяется в middleware **и** в
+  layout/Server Actions (`requireAdmin()`), т.е. в две независимые точки.
+- Пароли — bcrypt (12 раундов).
+- Документы, приложенные к обращениям «Получить помощь», хранятся **вне `/public`**
+  (`/storage/applications/...`) и отдаются только через `/api/admin/documents/[...path]`
+  с обязательной проверкой сессии — прямого публичного URL не существует.
+- Обращения (`Application`) не имеют публичного API/страницы — только `/admin/applications`.
+- Формы защищены honeypot-полем + проверкой времени заполнения + rate-limit по IP
+  (`src/lib/rateLimit.ts`, in-memory — см. TODO ниже).
+- CSP, `X-Content-Type-Options`, `Referrer-Policy`, `Permissions-Policy` — в `next.config.mjs`.
+- `robots.txt` закрывает `/admin` и `/api` от индексации.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+### SEO (п.37 ТЗ)
+- `generateMetadata` на каждой странице (title/description/OG/canonical).
+- `sitemap.xml` и `robots.txt` генерируются автоматически (`src/app/sitemap.ts`, `robots.ts`),
+  включая все опубликованные новости/истории/сборы/статьи/проекты на обеих локалях.
+- JSON-LD `NGO` в корневом layout (`OrganizationJsonLd.tsx`).
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Аналитика (п.39 ТЗ)
+- GA4 подключается только если задан `NEXT_PUBLIC_GA_ID` (`GoogleAnalytics.tsx`).
+- `trackEvent(...)` (`src/lib/analytics.ts`) шлёт события: клики WhatsApp/звонок/Instagram,
+  CTA «Нужна помощь», отправка форм, переход к сбору и т.д. — расставлены по всем CTA.
+
+---
+
+## 3. Модель данных (Prisma)
+
+Все сущности редактируются через админ-панель. Ключевые модели:
+
+- **Story** — объединяет «Мама недели» и «Истории помощи» (поле `isMamaOfWeek`),
+  со статусами 🟡/🔵/🟢/⚪ и опциональной связью 1-к-1 с `Fundraiser`.
+- **Fundraiser** + **Expense** — сбор и его расходы (для отчёта «получено/потрачено/остаток»).
+- **Application** — обращения «Получить помощь» (приватные, статусный конвейер
+  Новое→Принято→Консультация→Сопровождение→Направлено→Завершено).
+- **Vacancy, Grant, Project (категории: проекты/дармарки/эко/детям), Event, NewsPost,
+  UsefulArticle, GalleryImage, SiteStat** — обычные каталоги/CMS-сущности.
+- **VolunteerApplication, PartnerApplication, ContactMessage** — заявки с форм.
+- **AdminUser** (роли ADMIN/MANAGER) — пользователи админки.
+
+---
+
+## 4. Админ-панель
+
+`/admin/login` → защищённый раздел с сайдбаром:
+
+Дашборд · Обращения · Мама недели/Истории · Сборы и отчёты · Новости · Проекты/Дармарки/Детям ·
+Календарь · Вакансии · Гранты · Полезная информация · Галерея · Заявки волонтёров/партнёров ·
+Сообщения · Статистика Центра · Пользователи (только роль ADMIN).
+
+Отдельно стоит модуль **«Мама недели / Истории»**: одна форма закрывает и создание истории,
+и (опционально) привязанного сбора; кнопки **Опубликовать / Снять с публикации**,
+**Закрыть сбор**, **Опубликовать отчёт** — прямо в списке.
+
+Раздел **«Обращения»** — полный конвейер статусов, приватная карточка обращения
+(документы отдаются защищённой ссылкой), выгрузка в CSV (кнопка «Выгрузить в Excel/CSV»,
+с фильтром по статусу).
+
+---
+
+## 5. Демо-данные и обязательные TODO перед запуском в прод
+
+Сид (`npm run db:seed`) создаёт:
+- одного администратора;
+- статистику Центра — **только «15+ тонн вещей» реально из ТЗ**, остальные показатели = 0
+  (заполните на странице `/admin/stats`, когда появятся подтверждённые цифры — п.47 ТЗ
+  прямо запрещает придумывать цифры);
+- статьи «Полезной информации» — заголовки из ТЗ, тело помечено `TODO: требуется контент
+  заказчика` и **не опубликовано**;
+- 2 демонстрационные записи «История/Сбор» с префиксом **`[Демо]`**, `published: false`
+  — иллюстрируют числа из примеров ТЗ (800 000 ₸ и т.д.). **Удалите их через админ-панель
+  или замените реальными кейсами перед запуском.**
+
+### TODO: точно требуется от заказчика (см. пометки `TODO` в коде/интерфейсе)
+1. **Hero-фото** (`src/components/home/Hero.tsx`) — AI-сгенерированное фото по промпту
+   из п.51 ТЗ. Инструмент генерации изображений недоступен в среде разработки — сейчас
+   стоит декоративная заглушка. Файл сохранить как `/public/hero/...` и подключить
+   через `<Photo src=... />`.
+2. **Реальные фотографии** Центра (Instagram `@analardy_qoldau_ortalygy`, мероприятия,
+   Дармарки и т.д.) — загружаются через админку (Новости/Проекты/Галерея/История)
+   вместо текущих нейтральных заглушек-градиентов.
+3. **Instagram API** — сейчас блок «Мы в соцсетях» ведёт на профиль; автообновление
+   последних публикаций требует Graph API доступа бизнес-аккаунта (см. TODO в
+   `InstagramTeaser.tsx`).
+4. **Facebook / Threads** — ссылки, иконки уже готовы (`NEXT_PUBLIC_FACEBOOK_URL`,
+   `NEXT_PUBLIC_THREADS_URL` в `.env`).
+5. **Официальные реквизиты Фонда** (БИН, ИИК, банк, QR для оплаты) —
+   страница `/requisites` и панель оплаты сбора (`PaymentPanel.tsx`) сейчас содержат
+   явный плейсхолдер вместо реквизитов.
+6. **Логотип** — сейчас типографская заглушка (`Logo.tsx`), нужен официальный файл.
+7. **Google Analytics** — задайте `NEXT_PUBLIC_GA_ID`, чтобы включить отслеживание.
+8. **Имена/фото специалистов, партнёров** — раздел «О Центре» и «Команда» помечены TODO.
+9. **Email для обратной связи** (`dict.contacts.email`) — пока TODO.
+
+Ни одно из перечисленного не выдумано — специально оставлено как понятный плейсхолдер
+(п.44 ТЗ).
+
+---
+
+## 6. Продакшн-деплой — что важно поменять
+
+- **`SESSION_SECRET`** — длинная случайная строка, отличная от значения в `.env.example`.
+- **`SEED_ADMIN_PASSWORD`** — сменить пароль администратора сразу после первого входа
+  (создать нового пользователя через `/admin/users`, деактивировать сид-аккаунт, либо
+  сменить пароль напрямую в БД).
+- **Хранилище документов обращений** (`src/lib/storage.ts`) — сейчас локальная
+  файловая система. Для реального продакшена (особенно serverless/несколько инстансов)
+  рекомендуется защищённое объектное хранилище (S3-совместимое, приватный бакет,
+  подписанные ссылки с ограниченным сроком).
+- **Rate-limit** (`src/lib/rateLimit.ts`) — сейчас in-memory (в рамках одного процесса).
+  При горизонтальном масштабировании вынести во внешнее хранилище (Redis/Upstash).
+- **Резервное копирование БД** и **логирование действий администратора** — таблица
+  `AdminAuditLog` в схеме подготовлена, но запись в неё из Server Actions ещё предстоит
+  подключить по мере необходимости (сейчас фиксируется факт изменений через сами таблицы
+  с `updatedAt`).
+- Задать `NEXT_PUBLIC_SITE_URL` в `.env` — используется в sitemap.xml, robots.txt и JSON-LD.
+
+---
+
+## 7. Что реализовано из ТЗ
+
+Реализованы все разделы ТЗ: главная (18 блоков), услуги (каталог + 9 страниц),
+«Мама недели» + еженедельный цикл, сборы, истории помощи с фильтрами, отчёты и
+прозрачность, форма «Получить помощь» с номером обращения `AO-YYYY-NNNNN`,
+кризисный социальный дом (без точного адреса), работа/профориентация с фильтрами,
+гранты, проекты/дармарки-эко/детям, «Помочь Центру», «Партнёрам» и «Волонтёрам» с
+формами, новости, календарь, полезная информация с поиском, фотогалерея (masonry +
+lightbox), контакты (2GIS + Google Maps + форма), политика конфиденциальности,
+пользовательское соглашение, реквизиты (TODO), полная админ-панель со всеми
+перечисленными в ТЗ функциями, RU/KZ на каждой странице, mobile-first с фиксированной
+нижней панелью, микро-анимации (Framer Motion), доступность (фокус-стили, alt,
+семантика), SEO, аналитика, базовая безопасность.
+
+Не реализовано технически (нет доступа/данных, см. раздел 5 выше): AI-фото хиро-блока,
+реальные фотографии, Instagram Graph API, точные реквизиты, окончательный логотип —
+всё явно помечено как `TODO` в коде и интерфейсе, ничего не выдумано.
