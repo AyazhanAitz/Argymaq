@@ -16,6 +16,7 @@
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { CHARITY_PHOTOS, CONSULTATION_PHOTOS, MASTERCLASS_PHOTOS, ECO_REUSE_PHOTOS } from "../src/content/photos";
 
 const prisma = new PrismaClient();
 
@@ -220,6 +221,104 @@ async function main() {
       },
     ],
     skipDuplicates: true,
+  });
+
+  // --- Галерея: реальные фотографии Центра, предоставленные заказчиком ---
+  // Категории на уровне папок (не выдумываем сюжет каждого отдельного фото):
+  //  - Мастерклассы           → EVENTS (мастер-классы и выставки для мам-мастериц)
+  //  - Консультации            → PROJECTS (приём и сопровождение услугополучателей)
+  //  - Благотворительность     → MOTHERS (адресная помощь мамам с детьми)
+  //  - Экоакция/дармарка/reuse → FLEA_MARKET (сбор и передача вещей)
+  const galleryFolders: Array<{
+    prefix: string;
+    photos: string[];
+    category: "EVENTS" | "PROJECTS" | "MOTHERS" | "FLEA_MARKET";
+    captionRu: string;
+    captionKz: string;
+  }> = [
+    {
+      prefix: "masterclass",
+      photos: MASTERCLASS_PHOTOS,
+      category: "EVENTS",
+      captionRu: "Мастер-класс и выставка для мам-мастериц Центра",
+      captionKz: "Орталықтың шебер-аналарына арналған мастер-класс пен көрме",
+    },
+    {
+      prefix: "consultation",
+      photos: CONSULTATION_PHOTOS,
+      category: "PROJECTS",
+      captionRu: "Приём и консультация услугополучателей в Центре",
+      captionKz: "Орталықта қызмет алушыларды қабылдау және кеңес беру",
+    },
+    {
+      prefix: "charity",
+      photos: CHARITY_PHOTOS,
+      category: "MOTHERS",
+      captionRu: "Адресная благотворительная помощь мамам с детьми",
+      captionKz: "Балалы аналарға арналған нақты қайырымдылық көмегі",
+    },
+    {
+      prefix: "eco-reuse",
+      photos: ECO_REUSE_PHOTOS,
+      category: "FLEA_MARKET",
+      captionRu: "Экоакция и дармарка — сбор и передача вещей семьям",
+      captionKz: "Экоакция және дармарка — заттарды жинау және отбасыларға беру",
+    },
+  ];
+
+  for (const folder of galleryFolders) {
+    for (const url of folder.photos) {
+      const id = `gallery-${folder.prefix}-${url.split("/").pop()}`;
+      await prisma.galleryImage.upsert({
+        where: { id },
+        update: {},
+        create: {
+          id,
+          url,
+          category: folder.category,
+          captionRu: folder.captionRu,
+          captionKz: folder.captionKz,
+        },
+      });
+    }
+  }
+
+  // --- Реальные проекты: фактические, обобщённые описания без вымышленных
+  // результатов, партнёров или цифр — только то, что видно на фото. ---
+  await prisma.project.upsert({
+    where: { slug: "masterclasses-for-mothers" },
+    update: {},
+    create: {
+      slug: "masterclasses-for-mothers",
+      category: "PROJECT",
+      titleRu: "Мастер-классы и выставки для мам-мастериц",
+      titleKz: "Шебер-аналарға арналған мастер-класстар мен көрмелер",
+      descriptionRu:
+        "Центр организует мастер-классы и выставки, где мамы Центра показывают свои изделия и национальные костюмы — в том числе на выставке «Одно село — один продукт».",
+      descriptionKz:
+        "Орталық мастер-класстар мен көрмелер ұйымдастырады, онда Орталықтың аналары өз бұйымдары мен ұлттық киімдерін көрсетеді — оның ішінде «Бір ауыл — бір өнім» көрмесінде.",
+      coverImage: MASTERCLASS_PHOTOS[4],
+      images: MASTERCLASS_PHOTOS.slice(0, 8),
+      published: true,
+    },
+  });
+
+  await prisma.project.upsert({
+    where: { slug: "eco-flea-market" },
+    update: {},
+    create: {
+      slug: "eco-flea-market",
+      category: "FLEA_MARKET",
+      titleRu: "Экоакция и дармарка",
+      titleKz: "Экоакция және дармарка",
+      descriptionRu:
+        "Уличные пункты сбора одежды, обуви и вещей для взрослых и детей — вещи передаются нуждающимся семьям, а часть перерабатывается в рамках эко-акций.",
+      descriptionKz:
+        "Ересектер мен балаларға арналған киім, аяқ-киім және заттарды жинайтын көше пункттері — заттар мұқтаж отбасыларға беріледі, ал бір бөлігі экоакциялар аясында қайта өңделеді.",
+      coverImage: ECO_REUSE_PHOTOS[2],
+      images: ECO_REUSE_PHOTOS.slice(0, 8),
+      published: true,
+    },
   });
 
   console.log("Seed завершён.");

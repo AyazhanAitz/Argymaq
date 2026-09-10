@@ -4,12 +4,21 @@ import { Photo } from "@/components/ui/Photo";
 import { LinkButton } from "@/components/ui/Button";
 import { CONTACTS } from "@/lib/contacts";
 import type { Dictionary } from "@/i18n/getDictionary";
+import { MASTERCLASS_PHOTOS, CONSULTATION_PHOTOS, CHARITY_PHOTOS, ECO_REUSE_PHOTOS } from "@/content/photos";
+
+const SHOWCASE = [
+  { src: MASTERCLASS_PHOTOS[1], alt: "Мастер-класс для мам Центра" },
+  { src: CONSULTATION_PHOTOS[2], alt: "Консультация услугополучателя" },
+  { src: CHARITY_PHOTOS[2], alt: "Благотворительная помощь семье" },
+  { src: ECO_REUSE_PHOTOS[4], alt: "Дармарка — сбор вещей" },
+];
 
 /**
  * TODO: подключить официальный Instagram Graph API (Instagram Basic
  * Display / Content Publishing API) для автоматического вывода последних
  * публикаций @analardy_qoldau_ortalygy, когда заказчик предоставит доступ
- * business-аккаунта. Сейчас — статичная витрина-заглушка со ссылкой на профиль.
+ * business-аккаунта. Пока показываем подборку реальных фото Центра из
+ * src/photos (см. src/content/photos.ts) со ссылкой на профиль.
  */
 export function InstagramTeaser({ dict }: { dict: Dictionary }) {
   return (
@@ -22,8 +31,8 @@ export function InstagramTeaser({ dict }: { dict: Dictionary }) {
           align="center"
         />
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          {Array.from({ length: 4 }).map((_, i) => (
-            <Photo key={i} src={null} alt="Instagram" label="Instagram" ratio="aspect-square" className="rounded-xl" />
+          {SHOWCASE.map((item) => (
+            <Photo key={item.src} src={item.src} alt={item.alt} ratio="aspect-square" className="rounded-xl" />
           ))}
         </div>
         <div className="mt-8 flex justify-center">

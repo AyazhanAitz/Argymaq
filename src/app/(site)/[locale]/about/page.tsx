@@ -2,10 +2,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/getDictionary";
+import Image from "next/image";
 import { Section, SectionHeading, Container } from "@/components/ui/Container";
 import { Photo } from "@/components/ui/Photo";
 import { LinkButton } from "@/components/ui/Button";
 import { Users, ShieldCheck, HeartHandshake, Target } from "lucide-react";
+import { LOGO, CONSULTATION_PHOTOS } from "@/content/photos";
 
 const content = {
   ru: {
@@ -24,6 +26,8 @@ const content = {
     teamTitle: "Команда и специалисты",
     teamText:
       "TODO: требуется контент заказчика — имена и фотографии специалистов, юристов, психологов и координаторов Центра.",
+    fundNote:
+      "Центр действует как проект ОФ «Фонд социального развития «Арғымақ» — некоммерческой организации, учредившей и поддерживающей его работу.",
   },
   kz: {
     title: "Орталық туралы",
@@ -40,6 +44,8 @@ const content = {
     ],
     teamTitle: "Команда және мамандар",
     teamText: "TODO: тапсырыс берушінің мазмұны қажет — Орталықтың мамандарының, заңгерлерінің, психологтарының аты-жөні мен фотосуреттері.",
+    fundNote:
+      "Орталық «Арғымақ» әлеуметтік даму қоры ҚҚ жобасы ретінде жұмыс істейді — оны құрған және жұмысын қолдайтын коммерциялық емес ұйым.",
   },
 };
 
@@ -60,13 +66,32 @@ export default function AboutPage({ params }: { params: { locale: string } }) {
       <Container className="max-w-4xl">
         <SectionHeading title={c.title} subtitle={c.lead} align="center" />
 
-        <Photo src={null} alt={c.title} label="Команда и мероприятия Центра" ratio="aspect-[16/7]" className="rounded-xl2" />
+        <Photo
+          src={CONSULTATION_PHOTOS[0]}
+          alt="Консультация специалиста Центра с мамой"
+          ratio="aspect-[16/7]"
+          className="rounded-xl2"
+          priority
+        />
 
         <div className="prose-content mt-8">
           <h2>{dict.hero.title}</h2>
           <p>{c.mission}</p>
           <h2>Наш подход</h2>
           <p>{c.approach}</p>
+        </div>
+
+        <div className="mt-8 flex items-center gap-4 rounded-xl2 border border-graphite-800/10 bg-white p-5">
+          <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full border border-graphite-800/10 bg-white">
+            <Image
+              src={LOGO.fund}
+              alt="Логотип ОФ «Фонд социального развития «Арғымақ»"
+              fill
+              sizes="56px"
+              className="object-cover"
+            />
+          </div>
+          <p className="text-sm text-graphite-600">{c.fundNote}</p>
         </div>
 
         <div className="mt-10 grid gap-4 sm:grid-cols-2">

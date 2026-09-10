@@ -46,14 +46,14 @@ export function SectionHeading({
       )}
       <h2
         className={cn(
-          "font-display text-3xl font-bold leading-tight sm:text-4xl",
+          "break-words font-display text-3xl font-bold leading-tight sm:text-4xl",
           dark ? "text-cream-50" : "text-graphite-800"
         )}
       >
         {title}
       </h2>
       {subtitle && (
-        <p className={cn("mt-3 text-base sm:text-lg", dark ? "text-cream-200" : "text-graphite-600")}>
+        <p className={cn("mt-3 break-words text-base sm:text-lg", dark ? "text-cream-200" : "text-graphite-600")}>
           {subtitle}
         </p>
       )}

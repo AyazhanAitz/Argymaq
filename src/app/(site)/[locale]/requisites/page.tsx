@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import { notFound } from "next/navigation";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/getDictionary";
 import { Section, Container } from "@/components/ui/Container";
 import { AlertTriangle } from "lucide-react";
+import { LOGO } from "@/content/photos";
 
 export async function generateMetadata({ params }: { params: { locale: string } }): Promise<Metadata> {
   const locale = isLocale(params.locale) ? params.locale : "ru";
@@ -29,7 +31,18 @@ export default function RequisitesPage({ params }: { params: { locale: string } 
   return (
     <Section tone="cream">
       <Container className="max-w-2xl">
-        <h1 className="mb-6 font-display text-3xl font-bold text-graphite-800">{dict.footer.requisites}</h1>
+        <div className="mb-6 flex items-center gap-4">
+          <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-full border border-graphite-800/10 bg-white">
+            <Image
+              src={LOGO.fund}
+              alt="Логотип ОФ «Фонд социального развития «Арғымақ»"
+              fill
+              sizes="48px"
+              className="object-cover"
+            />
+          </div>
+          <h1 className="font-display text-3xl font-bold text-graphite-800">{dict.footer.requisites}</h1>
+        </div>
 
         <div className="mb-6 flex items-start gap-3 rounded-xl2 border-2 border-dashed border-terracotta-300 bg-terracotta-50 p-5">
           <AlertTriangle className="mt-0.5 h-6 w-6 shrink-0 text-terracotta-500" />

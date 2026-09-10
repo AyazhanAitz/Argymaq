@@ -34,7 +34,7 @@ export function Header({
         <Logo locale={locale} />
 
         {/* Desktop nav */}
-        <nav className="hidden items-center gap-1 lg:flex" aria-label="Основная навигация">
+        <nav className="hidden items-center gap-0.5 xl:flex" aria-label="Основная навигация">
           {nav.map((item) => (
             <div
               key={item.href}
@@ -44,7 +44,7 @@ export function Header({
             >
               <Link
                 href={item.href}
-                className="flex items-center gap-1 rounded-full px-3 py-2 text-sm font-semibold text-graphite-700 transition-colors hover:bg-cream-200 hover:text-terracotta-600"
+                className="flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-semibold text-graphite-700 transition-colors hover:bg-cream-200 hover:text-terracotta-600"
               >
                 {item.label}
                 {item.children && <ChevronDown className="h-3.5 w-3.5" aria-hidden />}
@@ -73,11 +73,11 @@ export function Header({
           ))}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-3 lg:flex">
+        <div className="hidden shrink-0 items-center gap-2 xl:flex">
           <a
             href={`tel:${CONTACTS.phoneHref.replace("tel:", "")}`}
             onClick={() => trackEvent("click_call")}
-            className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-graphite-700 hover:text-terracotta-600 xl:flex"
+            className="hidden shrink-0 items-center gap-1.5 whitespace-nowrap text-sm font-semibold text-graphite-700 hover:text-terracotta-600 2xl:flex"
           >
             <Phone className="h-4 w-4 shrink-0" /> {CONTACTS.phone}
           </a>
@@ -92,7 +92,7 @@ export function Header({
         </div>
 
         {/* Mobile controls */}
-        <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex items-center gap-2 xl:hidden">
           <LanguageSwitcher current={locale} />
           <button
             type="button"
@@ -132,7 +132,7 @@ function MobileMenu({
   const [expanded, setExpanded] = useState<string | null>(null);
 
   return (
-    <div className="max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-graphite-800/10 bg-cream-50 pb-28 lg:hidden">
+    <div className="max-h-[calc(100vh-5rem)] overflow-y-auto border-t border-graphite-800/10 bg-cream-50 pb-28 xl:hidden">
       <nav className="container-page flex flex-col py-4" aria-label="Мобильная навигация">
         {nav.map((item) => (
           <div key={item.href} className="border-b border-graphite-800/5 py-1">
