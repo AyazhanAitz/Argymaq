@@ -24,23 +24,27 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  const [news, stories, fundraisers, projects, articles] = await Promise.all([
-    prisma.newsPost.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
-    prisma.story.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
-    prisma.fundraiser.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
-    prisma.project.findMany({ where: { published: true }, select: { slug: true, category: true, updatedAt: true } }),
-    prisma.usefulArticle.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
-  ]);
+  try {
+    const [news, stories, fundraisers, projects, articles] = await Promise.all([
+      prisma.newsPost.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
+      prisma.story.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
+      prisma.fundraiser.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
+      prisma.project.findMany({ where: { published: true }, select: { slug: true, category: true, updatedAt: true } }),
+      prisma.usefulArticle.findMany({ where: { published: true }, select: { slug: true, updatedAt: true } }),
+    ]);
 
-  for (const locale of locales) {
-    for (const n of news) entries.push({ url: `${SITE_URL}/${locale}/news/${n.slug}`, lastModified: n.updatedAt });
-    for (const s of stories) entries.push({ url: `${SITE_URL}/${locale}/stories/${s.slug}`, lastModified: s.updatedAt });
-    for (const f of fundraisers) entries.push({ url: `${SITE_URL}/${locale}/fundraisers/${f.slug}`, lastModified: f.updatedAt });
-    for (const a of articles) entries.push({ url: `${SITE_URL}/${locale}/useful-info/${a.slug}`, lastModified: a.updatedAt });
-    for (const p of projects) {
-      const base = p.category === "FLEA_MARKET" ? "flea-market" : p.category === "KIDS" ? "kids" : "projects";
-      entries.push({ url: `${SITE_URL}/${locale}/${base}/${p.slug}`, lastModified: p.updatedAt });
+    for (const locale of locales) {
+      for (const n of news) entries.push({ url: `${SITE_URL}/${locale}/news/${n.slug}`, lastModified: n.updatedAt });
+      for (const s of stories) entries.push({ url: `${SITE_URL}/${locale}/stories/${s.slug}`, lastModified: s.updatedAt });
+      for (const f of fundraisers) entries.push({ url: `${SITE_URL}/${locale}/fundraisers/${f.slug}`, lastModified: f.updatedAt });
+      for (const a of articles) entries.push({ url: `${SITE_URL}/${locale}/useful-info/${a.slug}`, lastModified: a.updatedAt });
+      for (const p of projects) {
+        const base = p.category === "FLEA_MARKET" ? "flea-market" : p.category === "KIDS" ? "kids" : "projects";
+        entries.push({ url: `${SITE_URL}/${locale}/${base}/${p.slug}`, lastModified: p.updatedAt });
+      }
     }
+  } catch {
+    // Database unavailable during build time; return static-only sitemap
   }
 
   return entries;
