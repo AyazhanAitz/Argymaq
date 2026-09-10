@@ -1,0 +1,57 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: argymaq-db
+    restart: "no"
+    environment:
+      POSTGRES_USER: argymaq_user
+      POSTGRES_PASSWORD: argymaq_password
+      POSTGRES_DB: argymaq
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U argymaq_user -d argymaq"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: argymaq-app
+    restart: "no"
+    ports:
+      - "3000:3000"
+    environment:
+      DATABASE_URL: postgresql://argymaq_user:argymaq_password@postgres:5432/argymaq?schema=public
+      SESSION_SECRET: ${SESSION_SECRET:-change-this-to-a-long-random-string-in-production}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL:-admin@example.com}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD:-change-this-password}
+      NEXT_PUBLIC_GA_ID: ${NEXT_PUBLIC_GA_ID:-}
+      NEXT_PUBLIC_WHATSAPP_NUMBER: ${NEXT_PUBLIC_WHATSAPP_NUMBER:-77771136714}
+      NEXT_PUBLIC_PHONE_NUMBER: ${NEXT_PUBLIC_PHONE_NUMBER:-+7 777 113 67 14}
+      NEXT_PUBLIC_INSTAGRAM_URL: ${NEXT_PUBLIC_INSTAGRAM_URL:-https://instagram.com/analardy_qoldau_ortalygy}
+      NEXT_PUBLIC_FACEBOOK_URL: ${NEXT_PUBLIC_FACEBOOK_URL:-}
+      NEXT_PUBLIC_THREADS_URL: ${NEXT_PUBLIC_THREADS_URL:-}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Mount volume for uploaded files/documents
+      - uploads_data:/app/public/uploads
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npx prisma db seed &&
+        node server.js
+      "
+
+volumes:
+  postgres_data:
+    driver: local
+  uploads_data:
+    driver: local
