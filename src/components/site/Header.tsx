@@ -6,6 +6,7 @@ import { ChevronDown, Menu, X, Phone } from "lucide-react";
 import { Logo } from "./Logo";
 import { LanguageSwitcher } from "./LanguageSwitcher";
 import { LinkButton } from "@/components/ui/Button";
+import { InstagramIcon, FacebookIcon, TelegramIcon } from "@/components/icons/SocialIcons";
 import type { NavItem } from "@/content/navigation";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/getDictionary";
@@ -44,7 +45,7 @@ export function Header({
             >
               <Link
                 href={item.href}
-                className="flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-2 text-sm font-semibold text-graphite-700 transition-colors hover:bg-cream-200 hover:text-terracotta-600"
+                className="flex items-center gap-1 whitespace-nowrap rounded-full px-2.5 py-2 text-[11px] font-bold uppercase tracking-wide text-graphite-700 transition-colors hover:bg-cream-200 hover:text-terracotta-600"
               >
                 {item.label}
                 {item.children && <ChevronDown className="h-3.5 w-3.5" aria-hidden />}
@@ -73,7 +74,7 @@ export function Header({
           ))}
         </nav>
 
-        <div className="hidden shrink-0 items-center gap-2 xl:flex">
+        <div className="hidden shrink-0 items-center gap-3 xl:flex">
           <a
             href={`tel:${CONTACTS.phoneHref.replace("tel:", "")}`}
             onClick={() => trackEvent("click_call")}
@@ -81,13 +82,29 @@ export function Header({
           >
             <Phone className="h-4 w-4 shrink-0" /> {CONTACTS.phone}
           </a>
+          <div className="hidden items-center gap-1.5 2xl:flex">
+            <HeaderSocialIcon href={CONTACTS.instagram} label="Instagram" onClick={() => trackEvent("click_instagram")}>
+              <InstagramIcon className="h-4 w-4" />
+            </HeaderSocialIcon>
+            {CONTACTS.facebook && (
+              <HeaderSocialIcon href={CONTACTS.facebook} label="Facebook" onClick={() => trackEvent("click_facebook")}>
+                <FacebookIcon className="h-4 w-4" />
+              </HeaderSocialIcon>
+            )}
+            {CONTACTS.telegram && (
+              <HeaderSocialIcon href={CONTACTS.telegram} label="Telegram">
+                <TelegramIcon className="h-4 w-4" />
+              </HeaderSocialIcon>
+            )}
+          </div>
           <LanguageSwitcher current={locale} />
           <LinkButton
-            href={`/${locale}/get-help`}
+            href={`/${locale}/help-center`}
             size="sm"
-            onClick={() => trackEvent("cta_need_help")}
+            className="uppercase tracking-wide"
+            onClick={() => trackEvent("cta_support_center")}
           >
-            {dict.cta.needHelp}
+            {dict.cta.supportFund}
           </LinkButton>
         </div>
 
@@ -115,6 +132,31 @@ export function Header({
         />
       )}
     </header>
+  );
+}
+
+function HeaderSocialIcon({
+  href,
+  label,
+  children,
+  onClick,
+}: {
+  href: string;
+  label: string;
+  children: React.ReactNode;
+  onClick?: () => void;
+}) {
+  return (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={label}
+      onClick={onClick}
+      className="flex h-8 w-8 items-center justify-center rounded-full border border-graphite-800/15 text-graphite-700 transition-colors hover:border-terracotta-500 hover:text-terracotta-600"
+    >
+      {children}
+    </a>
   );
 }
 

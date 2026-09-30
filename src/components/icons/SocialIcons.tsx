@@ -33,3 +33,12 @@ export function ThreadsIcon(props: SVGProps<SVGSVGElement>) {
     </svg>
   );
 }
+
+export function TelegramIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" {...props}>
+      <circle cx="12" cy="12" r="9" />
+      <path d="M7.5 12.2 16 8.3c.6-.27 1.1.17.85.9l-1.6 6.9c-.15.65-.7.8-1.2.5l-2.6-1.95-1.25 1.2c-.15.14-.28.2-.5.2l.18-2.55 4.6-4.2c.2-.18-.04-.28-.3-.1l-5.7 3.6-2.45-.75c-.55-.17-.56-.55.11-.8Z" />
+    </svg>
+  );
+}

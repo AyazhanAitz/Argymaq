@@ -11,6 +11,9 @@ export interface Dictionary {
     opportunities: string;
     news: string;
     support: string;
+    shop: string;
+    urgentHelp: string;
+    contacts: string;
     menu: string;
     close: string;
   };
@@ -36,6 +39,10 @@ export interface Dictionary {
     becomePartner: string;
     downloadCsv: string;
     back: string;
+    supportFund: string;
+    learnMore: string;
+    helpNow: string;
+    goToShop: string;
   };
   hero: {
     title: string;
@@ -44,6 +51,21 @@ export interface Dictionary {
   };
   quickActions: {
     title: string;
+  };
+  quickCards: {
+    urgentTitle: string;
+    urgentBadge: string;
+    urgentEmpty: string;
+    shopTitle: string;
+    shopCaption: string;
+    projectsTitle: string;
+    projectsEmpty: string;
+    fundraisersTitle: string;
+    fundraisersEmpty: string;
+    newsTitle: string;
+    humanitarianHelp: string;
+    donationRaised: string;
+    donationEmpty: string;
   };
   services: {
     kicker: string;

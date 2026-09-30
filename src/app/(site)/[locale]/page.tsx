@@ -13,13 +13,14 @@ import {
 } from "@/lib/queries";
 
 import { Hero } from "@/components/home/Hero";
+import { QuickCardsRow } from "@/components/home/QuickCardsRow";
+import { StatsBar } from "@/components/home/StatsBar";
 import { QuickActions } from "@/components/home/QuickActions";
 import { ServicesGrid } from "@/components/home/ServicesGrid";
 import { ProcessTimeline } from "@/components/home/ProcessTimeline";
 import { MamaOfWeekBlock } from "@/components/home/MamaOfWeekBlock";
 import { WeeklyCycle } from "@/components/home/WeeklyCycle";
 import { ListSection } from "@/components/home/ListSection";
-import { StatsBlock } from "@/components/home/StatsBlock";
 import { HelpCenterTeaser } from "@/components/home/HelpCenterTeaser";
 import { PartnersTeaser } from "@/components/home/PartnersTeaser";
 import { InstagramTeaser } from "@/components/home/InstagramTeaser";
@@ -39,20 +40,32 @@ export default async function HomePage({ params }: { params: { locale: string } 
   const locale: Locale = params.locale;
   const dict = getDictionary(locale);
 
-  const [mamaOfWeek, fundraisers, stories, projects, grants, news, events, stats] = await Promise.all([
+  const [mamaOfWeek, fundraisers, stories, projects, allProjects, grants, news, events, stats] = await Promise.all([
     getCurrentMamaOfWeek(),
     getOpenFundraisers(3),
     getStories("ALL").then((s) => s.slice(0, 3)),
     getProjects("PROJECT", 3),
+    getProjects(undefined, 4),
     getOpenGrants(3),
     getNews(3),
     getUpcomingEvents(3),
     getSiteStats(),
   ]);
 
+  const raisedTotal = fundraisers.reduce((sum, f) => sum + f.raisedAmount, 0);
+
   return (
     <>
-      <Hero locale={locale} dict={dict} />
+      <Hero locale={locale} dict={dict} raisedTotal={raisedTotal} openFundraisersCount={fundraisers.length} />
+      <QuickCardsRow
+        locale={locale}
+        dict={dict}
+        urgentFundraiser={fundraisers[0] ?? null}
+        projects={allProjects}
+        fundraiser={fundraisers[1] ?? null}
+        news={news}
+      />
+      <StatsBar stats={stats} locale={locale} />
       <QuickActions dict={dict} />
       <ServicesGrid locale={locale} dict={dict} />
       <ProcessTimeline dict={dict} />
@@ -125,7 +138,6 @@ export default async function HomePage({ params }: { params: { locale: string } 
         viewAllLabel={dict.cta.viewAll}
       />
 
-      <StatsBlock stats={stats} locale={locale} />
       <HelpCenterTeaser locale={locale} dict={dict} />
       <PartnersTeaser locale={locale} dict={dict} />
       <InstagramTeaser dict={dict} />

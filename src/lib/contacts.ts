@@ -10,6 +10,7 @@ export const CONTACTS = {
   // TODO: требуется от заказчика — официальные ссылки
   facebook: process.env.NEXT_PUBLIC_FACEBOOK_URL || "",
   threads: process.env.NEXT_PUBLIC_THREADS_URL || "",
+  telegram: process.env.NEXT_PUBLIC_TELEGRAM_URL || "",
   addressRu: "г. Алматы, ул. Толе би, 23А (угол ул. Зенкова), цокольный этаж, подъезд 3, каб. Ц-01",
   addressKz: "Алматы қ., Төле би көш., 23А (Зенков көшесінің бұрышы), цоколь қабат, 3-ші кіреберіс, Ц-01 каб.",
 } as const;

@@ -12,6 +12,14 @@ export interface NavItem {
   children?: NavChild[];
 }
 
+/**
+ * Верхний уровень меню повторяет референсный макет (7 пунктов: О нас /
+ * Наша помощь / Проекты / Новости / Магазин / Срочная помощь / Контакты).
+ * Все остальные разделы сайта (услуги, гранты, вакансии, волонтёрам,
+ * партнёрам, отчёты и т.д.) не удалены — они собраны в выпадающих
+ * подменю «Наша помощь» и «Проекты», чтобы не терять ни одной
+ * существующей страницы.
+ */
 export function buildNav(dict: Dictionary, locale: Locale): NavItem[] {
   const p = (path: string) => `/${locale}${path}`;
   return [
@@ -24,29 +32,22 @@ export function buildNav(dict: Dictionary, locale: Locale): NavItem[] {
         { label: dict.mamaOfWeek.badge, href: p("/mama-of-week") },
         { label: dict.stories.title, href: p("/stories") },
         { label: dict.fundraisers.title, href: p("/fundraisers") },
-        { label: dict.crisisHome.title, href: p("/crisis-home") },
         { label: dict.usefulInfo.title, href: p("/useful-info") },
+        { label: dict.nav.services, href: p("/services") },
+        { label: dict.grants.title, href: p("/grants") },
+        { label: dict.jobs.title, href: p("/jobs") },
+        { label: dict.helpCenter.title, href: p("/help-center") },
+        { label: dict.partners.title, href: p("/partners") },
+        { label: dict.volunteers.title, href: p("/volunteers") },
+        { label: dict.reports.title, href: p("/reports") },
       ],
-    },
-    {
-      label: dict.nav.services,
-      href: p("/services"),
     },
     {
       label: dict.nav.projects,
       href: p("/projects"),
       children: [
         { label: dict.projects.title, href: p("/projects") },
-        { label: dict.fleaMarket.title, href: p("/flea-market") },
         { label: dict.kids.title, href: p("/kids") },
-      ],
-    },
-    {
-      label: dict.nav.opportunities,
-      href: p("/grants"),
-      children: [
-        { label: dict.grants.title, href: p("/grants") },
-        { label: dict.jobs.title, href: p("/jobs") },
       ],
     },
     {
@@ -58,15 +59,8 @@ export function buildNav(dict: Dictionary, locale: Locale): NavItem[] {
         { label: dict.gallery.title, href: p("/gallery") },
       ],
     },
-    {
-      label: dict.nav.support,
-      href: p("/help-center"),
-      children: [
-        { label: dict.helpCenter.title, href: p("/help-center") },
-        { label: dict.partners.title, href: p("/partners") },
-        { label: dict.volunteers.title, href: p("/volunteers") },
-        { label: dict.reports.title, href: p("/reports") },
-      ],
-    },
+    { label: dict.nav.shop, href: p("/flea-market") },
+    { label: dict.nav.urgentHelp, href: p("/crisis-home") },
+    { label: dict.nav.contacts, href: p("/contacts") },
   ];
 }
