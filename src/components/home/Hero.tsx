@@ -21,14 +21,23 @@ function getHowWeHelp(locale: Locale, dict: Dictionary) {
   ];
 }
 
+/** Мягкая маска, «растворяющая» край фотографии в фон hero — без рамки и обрезки. */
+const FADE_RIGHT =
+  "[mask-image:linear-gradient(to_right,transparent_0%,black_22%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_22%)]";
+const FADE_TOP =
+  "[mask-image:linear-gradient(to_bottom,transparent_0%,black_14%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_14%)]";
+
 /**
  * Hero-блок (п.5 и п.51 ТЗ).
  *
- * Композиция приближена к референс-макету заказчика: слева — заголовок,
- * подзаголовок, две CTA-кнопки и ряд «чем мы помогаем»; справа — фотография
- * мамы с детьми (референсный кадр, см. HERO_PHOTO в src/content/photos.ts)
- * с декоративным орнаментом и плавающей карточкой «Поддержать фонд»,
- * привязанной к реальным данным открытых сборов (без выдуманных цифр).
+ * Структура, тексты, кнопки и навигация не менялись — переработана только
+ * визуальная композиция: фотография мамы с детьми (HERO_PHOTO, см.
+ * src/content/photos.ts) больше не лежит в отдельной карточке/рамке, а
+ * становится частью фона hero — без обрезки (object-contain, пропорции
+ * контейнера точно равны пропорциям кадра), с плавным растворением края
+ * в общий кремовый фон секции (mask-image) и без видимых границ/теней.
+ * На мобильных фото идёт отдельным блоком под текстом, тоже целиком и
+ * без рамки.
  */
 export function Hero({
   locale,
@@ -45,8 +54,27 @@ export function Hero({
 
   return (
     <section className="relative overflow-hidden bg-cream-100">
-      <div className="container-page grid items-center gap-10 py-12 sm:py-16 lg:grid-cols-[1.05fr_1fr] lg:gap-8 lg:py-20">
-        <div className="order-2 lg:order-1">
+      {/* Фото — фон правой части hero на десктопе/планшете, edge-to-edge, без карточки.
+          Ширина зафиксирована в % от секции, а не от её высоты — чтобы фото не
+          разрасталось и не наезжало на текст, если текст переносится на
+          дополнительную строку на более узких экранах. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 md:block"
+      >
+        <Image
+          src={HERO_PHOTO}
+          alt=""
+          fill
+          sizes="50vw"
+          className={`object-contain object-bottom ${FADE_RIGHT}`}
+          priority
+        />
+      </div>
+      <MotherChildOrnament className="pointer-events-none absolute right-6 top-6 hidden h-40 w-40 text-terracotta-400/20 md:block lg:h-52 lg:w-52" />
+
+      <div className="container-page relative z-10 grid items-center gap-10 py-12 sm:py-16 md:grid-cols-[1.05fr_1fr] md:gap-8 lg:py-20">
+        <div>
           <h1 className="font-display text-4xl font-extrabold leading-[1.1] text-graphite-900 sm:text-5xl lg:text-[3.1rem]">
             {dict.hero.title}
           </h1>
@@ -83,41 +111,77 @@ export function Hero({
           </a>
         </div>
 
-        <div className="relative order-1 lg:order-2">
-          <MotherChildOrnament className="pointer-events-none absolute -right-2 -top-6 h-40 w-40 text-terracotta-400/25 sm:h-52 sm:w-52 lg:-right-6 lg:-top-8 lg:h-64 lg:w-64" />
+        {/* Пустая колонка-распорка под фото-фон на md+, чтобы текст не заходил под фотографию */}
+        <div className="hidden md:block" aria-hidden />
+      </div>
 
-          <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl2 shadow-soft sm:aspect-[4/4.5] lg:aspect-[4/5]">
-            <Image
-              src={HERO_PHOTO}
-              alt="Мама несёт спящих детей в национальном костюме — Центр поддержки матерей"
-              fill
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover object-center"
-              priority
+      {/* Плавающая карточка «Поддержать фонд» — реальные данные открытых сборов.
+          На md+ лежит поверх фото в правом нижнем углу секции; на мобильных — обычным блоком после фото. */}
+      <div className="hidden md:block">
+        <div className="absolute bottom-10 right-6 z-10 w-60 rounded-xl2 bg-cream-50 p-5 text-center shadow-soft lg:right-10">
+          <DonationCardContent
+            locale={locale}
+            dict={dict}
+            raisedTotal={raisedTotal}
+            openFundraisersCount={openFundraisersCount}
+          />
+        </div>
+      </div>
+
+      {/* Фото на мобильных — отдельным блоком под текстом, целиком, без рамки, edge-to-edge по ширине */}
+      <div className="relative -mx-4 mt-2 sm:-mx-6 md:hidden">
+        <div className={`relative aspect-[1155/1284] w-full ${FADE_TOP}`}>
+          <Image
+            src={HERO_PHOTO}
+            alt="Мама несёт спящих детей в национальном костюме — Центр поддержки матерей"
+            fill
+            sizes="100vw"
+            className="object-contain object-top"
+          />
+        </div>
+        <div className="container-page -mt-8 relative z-10">
+          <div className="mx-auto max-w-xs rounded-xl2 bg-cream-50 p-5 text-center shadow-soft">
+            <DonationCardContent
+              locale={locale}
+              dict={dict}
+              raisedTotal={raisedTotal}
+              openFundraisersCount={openFundraisersCount}
             />
-          </div>
-
-          {/* Плавающая карточка «Поддержать фонд» — реальные данные открытых сборов.
-              Закреплена снизу, чтобы не перекрывать лицо на фото ни на одном брейкпоинте. */}
-          <div className="absolute -bottom-6 left-4 right-4 rounded-xl2 bg-cream-50 p-5 text-center shadow-soft sm:bottom-4 sm:left-auto sm:right-4 sm:w-60">
-            <p className="text-xs font-bold uppercase tracking-wide text-graphite-700">{dict.cta.supportFund}</p>
-            <Heart className="mx-auto mt-2 h-6 w-6 fill-terracotta-500 text-terracotta-500" />
-            {openFundraisersCount > 0 ? (
-              <>
-                <p className="mt-2 font-display text-2xl font-extrabold text-graphite-900">
-                  {formatTenge(raisedTotal, locale)}
-                </p>
-                <p className="mt-0.5 text-xs text-graphite-500">{dict.quickCards.donationRaised}</p>
-              </>
-            ) : (
-              <p className="mt-2 text-xs leading-snug text-graphite-500">{dict.quickCards.donationEmpty}</p>
-            )}
-            <LinkButton href={`/${locale}/${openFundraisersCount > 0 ? "fundraisers" : "help-center"}`} size="sm" className="mt-4 w-full">
-              {dict.cta.helpNow}
-            </LinkButton>
           </div>
         </div>
       </div>
     </section>
+  );
+}
+
+function DonationCardContent({
+  locale,
+  dict,
+  raisedTotal,
+  openFundraisersCount,
+}: {
+  locale: Locale;
+  dict: Dictionary;
+  raisedTotal: number;
+  openFundraisersCount: number;
+}) {
+  return (
+    <>
+      <p className="text-xs font-bold uppercase tracking-wide text-graphite-700">{dict.cta.supportFund}</p>
+      <Heart className="mx-auto mt-2 h-6 w-6 fill-terracotta-500 text-terracotta-500" />
+      {openFundraisersCount > 0 ? (
+        <>
+          <p className="mt-2 font-display text-2xl font-extrabold text-graphite-900">
+            {formatTenge(raisedTotal, locale)}
+          </p>
+          <p className="mt-0.5 text-xs text-graphite-500">{dict.quickCards.donationRaised}</p>
+        </>
+      ) : (
+        <p className="mt-2 text-xs leading-snug text-graphite-500">{dict.quickCards.donationEmpty}</p>
+      )}
+      <LinkButton href={`/${locale}/${openFundraisersCount > 0 ? "fundraisers" : "help-center"}`} size="sm" className="mt-4 w-full">
+        {dict.cta.helpNow}
+      </LinkButton>
+    </>
   );
 }
