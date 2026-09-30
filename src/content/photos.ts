@@ -29,8 +29,18 @@ export const CONSULTATION_PHOTOS = range(16).map((n) => `/photos/consultations/c
 export const MASTERCLASS_PHOTOS = range(12).map((n) => `/photos/masterclasses/masterclass-${n}.jpg`);
 export const ECO_REUSE_PHOTOS = range(16).map((n) => `/photos/eco-reuse/eco-reuse-${n}.jpg`);
 
-/** Фото с выставки «Одно село — один продукт»: мастерица с национальными костюмами. */
-export const HERO_PHOTO = MASTERCLASS_PHOTOS[4]; // masterclass-05.jpg
+/**
+ * Фото для Hero-блока главной страницы.
+ *
+ * Это НЕ фото из клиентского архива src/photos — это отдельно
+ * подготовленный кадр (мама несёт детей в национальном костюме),
+ * предоставленный заказчиком как референс композиции hero. Кадр вырезан
+ * из референсного макета, очищен от наложенных элементов интерфейса
+ * (карточка «Поддержать фонд», декоративные листья) и апскейлен/резкость
+ * повышена вручную. Хранится отдельно в public/hero/, не смешивается с
+ * реальными фото Центра из public/photos/.
+ */
+export const HERO_PHOTO = "/hero/mother-child.jpg";
 
 /** Уличный пункт сбора «Charity/Благотворительность» — для страницы Дармарки/эко. */
 export const FLEA_MARKET_HERO_PHOTO = ECO_REUSE_PHOTOS[2]; // eco-reuse-03.jpg

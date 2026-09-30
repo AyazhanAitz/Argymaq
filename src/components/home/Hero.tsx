@@ -26,11 +26,9 @@ function getHowWeHelp(locale: Locale, dict: Dictionary) {
  *
  * Композиция приближена к референс-макету заказчика: слева — заголовок,
  * подзаголовок, две CTA-кнопки и ряд «чем мы помогаем»; справа — фотография
- * Центра с декоративным орнаментом и плавающей карточкой «Поддержать фонд»,
+ * мамы с детьми (референсный кадр, см. HERO_PHOTO в src/content/photos.ts)
+ * с декоративным орнаментом и плавающей карточкой «Поддержать фонд»,
  * привязанной к реальным данным открытых сборов (без выдуманных цифр).
- *
- * Фото реальное — из архива мероприятий Центра (src/photos/Мастерклассы),
- * см. src/content/photos.ts.
  */
 export function Hero({
   locale,
@@ -91,16 +89,17 @@ export function Hero({
           <div className="relative aspect-[4/5] w-full overflow-hidden rounded-xl2 shadow-soft sm:aspect-[4/4.5] lg:aspect-[4/5]">
             <Image
               src={HERO_PHOTO}
-              alt="Мастер-класс и выставка «Одно село — один продукт» — Центр поддержки матерей"
+              alt="Мама несёт спящих детей в национальном костюме — Центр поддержки матерей"
               fill
               sizes="(max-width: 1024px) 100vw, 50vw"
-              className="object-cover object-[68%_38%]"
+              className="object-cover object-center"
               priority
             />
           </div>
 
-          {/* Плавающая карточка «Поддержать фонд» — реальные данные открытых сборов */}
-          <div className="absolute -bottom-6 left-4 right-4 rounded-xl2 bg-cream-50 p-5 text-center shadow-soft sm:bottom-auto sm:left-auto sm:right-4 sm:top-4 sm:w-56">
+          {/* Плавающая карточка «Поддержать фонд» — реальные данные открытых сборов.
+              Закреплена снизу, чтобы не перекрывать лицо на фото ни на одном брейкпоинте. */}
+          <div className="absolute -bottom-6 left-4 right-4 rounded-xl2 bg-cream-50 p-5 text-center shadow-soft sm:bottom-4 sm:left-auto sm:right-4 sm:w-60">
             <p className="text-xs font-bold uppercase tracking-wide text-graphite-700">{dict.cta.supportFund}</p>
             <Heart className="mx-auto mt-2 h-6 w-6 fill-terracotta-500 text-terracotta-500" />
             {openFundraisersCount > 0 ? (
