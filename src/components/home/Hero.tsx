@@ -21,11 +21,30 @@ function getHowWeHelp(locale: Locale, dict: Dictionary) {
   ];
 }
 
-/** Мягкая маска, «растворяющая» край фотографии в фон hero — без рамки и обрезки. */
-const FADE_RIGHT =
-  "[mask-image:linear-gradient(to_right,transparent_0%,black_22%)] [-webkit-mask-image:linear-gradient(to_right,transparent_0%,black_22%)]";
-const FADE_TOP =
-  "[mask-image:linear-gradient(to_bottom,transparent_0%,black_14%)] [-webkit-mask-image:linear-gradient(to_bottom,transparent_0%,black_14%)]";
+/**
+ * Тёплый кремовый оттенок, снятый пипеткой с самой фотографии (светлое
+ * небо/фон кадра HERO_PHOTO) — используется и как фон всей hero-секции,
+ * и как цвет «растворяющего» градиента поверх фото, чтобы переход между
+ * снимком и фоном был одного и того же оттенка, а не просто прозрачностью
+ * поверх отличающегося по тону фона.
+ */
+const HERO_CREAM = "#FFF6E3";
+
+/**
+ * Градиент-«вуаль» поверх фото: у края — почти непрозрачный кремовый,
+ * к центру снимка — полностью прозрачный. Радиальная часть привязана к
+ * тому углу кадра, где на фото чистое небо (без лиц и деталей), поэтому
+ * лицо мамы, дети, одежда и узор слинга остаются полностью резкими —
+ * «тает» только самый краевой, пустой участок изображения.
+ */
+function heroFadeStyle(cornerX: "0%" | "50%", axis: "to right" | "to bottom") {
+  return {
+    backgroundImage: [
+      `radial-gradient(ellipse 70% 65% at ${cornerX} 0%, ${HERO_CREAM} 22%, transparent 68%)`,
+      `linear-gradient(${axis}, ${HERO_CREAM} 0%, transparent 16%)`,
+    ].join(", "),
+  } as const;
+}
 
 /**
  * Hero-блок (п.5 и п.51 ТЗ).
@@ -53,23 +72,29 @@ export function Hero({
   const howWeHelp = getHowWeHelp(locale, dict);
 
   return (
-    <section className="relative overflow-hidden bg-cream-100">
+    <section className="relative overflow-hidden" style={{ backgroundColor: HERO_CREAM }}>
       {/* Фото — фон правой части hero на десктопе/планшете, edge-to-edge, без карточки.
-          Ширина зафиксирована в % от секции, а не от её высоты — чтобы фото не
-          разрасталось и не наезжало на текст, если текст переносится на
-          дополнительную строку на более узких экранах. */}
+          Контейнер имеет ТОЧНО те же пропорции, что и сам кадр (aspect-ratio),
+          поэтому object-contain не оставляет пустых полей по бокам — иначе
+          растворяющий градиент (привязанный к контейнеру) попадал бы на
+          пустое место и переход на самом фото получался бы у́же и резче,
+          чем задумано. Высота — фиксированная по брейкпоинтам, а не 100%
+          секции, чтобы фото не могло разрастись и наехать на текст, даже
+          если заголовок перенесётся на лишнюю строку. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 right-0 hidden w-1/2 md:block"
+        className="pointer-events-none absolute right-0 top-1/2 hidden aspect-[1155/1284] h-[420px] -translate-y-1/2 md:block lg:h-[520px] xl:h-[600px]"
       >
         <Image
           src={HERO_PHOTO}
           alt=""
           fill
           sizes="50vw"
-          className={`object-contain object-bottom ${FADE_RIGHT}`}
+          className="object-contain object-bottom"
           priority
         />
+        {/* Растворение верхне-левого (небесного) угла фото в фон секции — без блюра самого снимка */}
+        <div aria-hidden className="absolute inset-0" style={heroFadeStyle("0%", "to right")} />
       </div>
       <MotherChildOrnament className="pointer-events-none absolute right-6 top-6 hidden h-40 w-40 text-terracotta-400/20 md:block lg:h-52 lg:w-52" />
 
@@ -130,7 +155,7 @@ export function Hero({
 
       {/* Фото на мобильных — отдельным блоком под текстом, целиком, без рамки, edge-to-edge по ширине */}
       <div className="relative -mx-4 mt-2 sm:-mx-6 md:hidden">
-        <div className={`relative aspect-[1155/1284] w-full ${FADE_TOP}`}>
+        <div className="relative aspect-[1155/1284] w-full">
           <Image
             src={HERO_PHOTO}
             alt="Мама несёт спящих детей в национальном костюме — Центр поддержки матерей"
@@ -138,6 +163,8 @@ export function Hero({
             sizes="100vw"
             className="object-contain object-top"
           />
+          {/* Растворение верхнего (небесного) края фото в фон секции — без блюра самого снимка */}
+          <div aria-hidden className="absolute inset-0" style={heroFadeStyle("50%", "to bottom")} />
         </div>
         <div className="container-page -mt-8 relative z-10">
           <div className="mx-auto max-w-xs rounded-xl2 bg-cream-50 p-5 text-center shadow-soft">
