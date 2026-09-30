@@ -73,7 +73,7 @@ export function Hero({
 
   return (
     <section
-      className="relative overflow-hidden md:min-h-[440px] lg:min-h-[540px] xl:min-h-[620px]"
+      className="relative overflow-hidden md:min-h-[500px] lg:min-h-[610px] xl:min-h-[700px]"
       style={{ backgroundColor: HERO_CREAM }}
     >
       {/* Фото — фон правой части hero на десктопе/планшете, edge-to-edge, без карточки.
@@ -81,13 +81,14 @@ export function Hero({
           поэтому object-contain не оставляет пустых полей по бокам — иначе
           растворяющий градиент (привязанный к контейнеру) попадал бы на
           пустое место и переход на самом фото получался бы у́же и резче,
-          чем задумано. Высота — фиксированная по брейкпоинтам (с запасом
-          ~12% меньше исходного масштаба) и якорь — сверху, а не по центру:
-          так голова мамы гарантированно не обрезается секцией сверху, даже
-          если текстовая колонка окажется короче высоты фото. */}
+          чем задумано. Размер приближен к референсу заказчика (фото занимает
+          почти всю высоту hero). Якорь — сверху, а не по центру: так голова
+          мамы гарантированно не обрезается секцией сверху, даже если
+          текстовая колонка окажется короче высоты фото; min-height у самой
+          секции даёт гарантированный запас снизу. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute right-0 top-8 hidden aspect-[1155/1284] h-[370px] md:block lg:top-10 lg:h-[460px] xl:top-12 xl:h-[530px]"
+        className="pointer-events-none absolute right-0 top-4 hidden aspect-[1155/1284] h-[460px] md:block lg:top-6 lg:h-[560px] xl:top-8 xl:h-[640px]"
       >
         <Image
           src={HERO_PHOTO}
