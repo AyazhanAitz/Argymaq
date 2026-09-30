@@ -72,25 +72,29 @@ export function Hero({
   const howWeHelp = getHowWeHelp(locale, dict);
 
   return (
-    <section className="relative overflow-hidden" style={{ backgroundColor: HERO_CREAM }}>
+    <section
+      className="relative overflow-hidden md:min-h-[440px] lg:min-h-[540px] xl:min-h-[620px]"
+      style={{ backgroundColor: HERO_CREAM }}
+    >
       {/* Фото — фон правой части hero на десктопе/планшете, edge-to-edge, без карточки.
           Контейнер имеет ТОЧНО те же пропорции, что и сам кадр (aspect-ratio),
           поэтому object-contain не оставляет пустых полей по бокам — иначе
           растворяющий градиент (привязанный к контейнеру) попадал бы на
           пустое место и переход на самом фото получался бы у́же и резче,
-          чем задумано. Высота — фиксированная по брейкпоинтам, а не 100%
-          секции, чтобы фото не могло разрастись и наехать на текст, даже
-          если заголовок перенесётся на лишнюю строку. */}
+          чем задумано. Высота — фиксированная по брейкпоинтам (с запасом
+          ~12% меньше исходного масштаба) и якорь — сверху, а не по центру:
+          так голова мамы гарантированно не обрезается секцией сверху, даже
+          если текстовая колонка окажется короче высоты фото. */}
       <div
         aria-hidden
-        className="pointer-events-none absolute right-0 top-1/2 hidden aspect-[1155/1284] h-[420px] -translate-y-1/2 md:block lg:h-[520px] xl:h-[600px]"
+        className="pointer-events-none absolute right-0 top-8 hidden aspect-[1155/1284] h-[370px] md:block lg:top-10 lg:h-[460px] xl:top-12 xl:h-[530px]"
       >
         <Image
           src={HERO_PHOTO}
           alt=""
           fill
           sizes="50vw"
-          className="object-contain object-bottom"
+          className="object-contain object-top"
           priority
         />
         {/* Растворение верхне-левого (небесного) угла фото в фон секции — без блюра самого снимка */}
