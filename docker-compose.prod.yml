@@ -1,0 +1,98 @@
+# Продакшн-конфигурация деплоя. Полная инструкция — в DEPLOY.md.
+#
+# Использование:
+#   1. Создайте .env рядом с этим файлом (см. DEPLOY.md, раздел 4)
+#      и добавьте в него строку:  COMPOSE_FILE=docker-compose.prod.yml
+#      — тогда во всех командах достаточно `docker compose ...` без -f.
+#   2. docker compose build && docker compose up -d
+#
+# Отличия от docker-compose.yml (для локальной разработки):
+#   - build.args: NEXT_PUBLIC_* попадают в бандл на этапе СБОРКИ (Dockerfile, п. 3.1)
+#   - секреты обязательны (:?) — без них compose не стартует
+#   - порты видны только с самого сервера (127.0.0.1)
+#   - том storage_data для приватных документов обращений (п.38 ТЗ)
+#   - restart: unless-stopped, healthcheck, ротация логов
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: argymaq-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: argymaq_user
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в .env}"
+      POSTGRES_DB: argymaq
+    # Виден только с самого сервера — нужен для pg_dump и Prisma Studio
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U argymaq_user -d argymaq"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      # Переменные NEXT_PUBLIC_* попадают в бандл на этапе СБОРКИ (см. п. 3.1 DEPLOY.md)
+      args:
+        NEXT_PUBLIC_SITE_URL: "${NEXT_PUBLIC_SITE_URL:-}"
+        NEXT_PUBLIC_GA_ID: "${NEXT_PUBLIC_GA_ID:-}"
+        NEXT_PUBLIC_WHATSAPP_NUMBER: "${NEXT_PUBLIC_WHATSAPP_NUMBER:-77771136714}"
+        NEXT_PUBLIC_PHONE_NUMBER: "${NEXT_PUBLIC_PHONE_NUMBER:-+7 777 113 67 14}"
+        NEXT_PUBLIC_INSTAGRAM_URL: "${NEXT_PUBLIC_INSTAGRAM_URL:-https://instagram.com/analardy_qoldau_ortalygy}"
+        NEXT_PUBLIC_FACEBOOK_URL: "${NEXT_PUBLIC_FACEBOOK_URL:-}"
+        NEXT_PUBLIC_THREADS_URL: "${NEXT_PUBLIC_THREADS_URL:-}"
+        NEXT_PUBLIC_TELEGRAM_URL: "${NEXT_PUBLIC_TELEGRAM_URL:-}"
+    container_name: argymaq-app
+    restart: unless-stopped
+    # Приложение доступно только с самого сервера (nginx/Caddy проксирует на 127.0.0.1:3000)
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      DATABASE_URL: "postgresql://argymaq_user:${POSTGRES_PASSWORD:?Задайте POSTGRES_PASSWORD в .env}@postgres:5432/argymaq?schema=public"
+      SESSION_SECRET: "${SESSION_SECRET:?Задайте SESSION_SECRET в .env}"
+      SEED_ADMIN_EMAIL: "${SEED_ADMIN_EMAIL:-admin@argymaq.kz}"
+      SEED_ADMIN_PASSWORD: "${SEED_ADMIN_PASSWORD:?Задайте SEED_ADMIN_PASSWORD в .env}"
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Медиафайлы (обложки, галерея) — публичные
+      - uploads_data:/app/public/uploads
+      # Приватные документы обращений «Получить помощь» — НЕ в /public (п.38 ТЗ)
+      - storage_data:/app/storage
+    # Миграции применяются автоматически; сид создаёт админа и базовый контент.
+    # ВАЖНО: после первого успешного старта уберите строку `npx prisma db seed &&` —
+    # иначе при каждом рестарте сид заново создаст удалённые демо-записи (DEPLOY.md, п. 7.4).
+    command: >
+      sh -c "
+        npx prisma migrate deploy &&
+        npx prisma db seed &&
+        node server.js
+      "
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/ru').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data:
+  uploads_data:
+  storage_data:
